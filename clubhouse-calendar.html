@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<!--
+  HOA Clubhouse Reservation Calendar
+  Version: H.01.00
+  Project: H (HOA Clubhouse Calendar)
+  Generated: 2026-05-13
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villas at Legacy Farms — Clubhouse Reservations</title>
+<style>
+  :root{
+    --ink:#1f2937;
+    --ink-soft:#4b5563;
+    --line:#d6d3d1;
+    --line-soft:#e7e5e4;
+    --paper:#fafaf9;
+    --card:#ffffff;
+    --accent:#7c2d12;
+    --accent-soft:#fef3c7;
+    --chip:#fed7aa;
+    --chip-ink:#7c2d12;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 22px 60px}
+  header.page{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:14px;margin-bottom:18px;
+  }
+  header.page h1{
+    font-size:26px;letter-spacing:.01em;margin:0;font-weight:600;
+  }
+  header.page .sub{
+    color:var(--ink-soft);font-size:13px;font-style:italic;
+  }
+  .toolbar{
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    margin-bottom:14px;
+  }
+  .toolbar .spacer{flex:1}
+  .ver{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:11px;color:var(--ink-soft);
+    border:1px solid var(--line);padding:2px 6px;border-radius:3px;
+    background:#fff;
+  }
+  button{
+    font:inherit;
+    background:#fff;border:1px solid var(--line);color:var(--ink);
+    padding:7px 13px;border-radius:4px;cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  button:hover{background:#f5f5f4;border-color:#a8a29e}
+  button.primary{
+    background:var(--accent);color:#fff;border-color:var(--accent);
+  }
+  button.primary:hover{background:#5a1e0c}
+  .month-nav{
+    display:flex;align-items:center;gap:14px;margin-bottom:10px;
+  }
+  .month-nav h2{
+    font-size:22px;margin:0;font-weight:500;letter-spacing:.02em;
+    flex:1;text-align:center;
+  }
+  .grid{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+    display:grid;grid-template-columns:repeat(7,1fr);
+  }
+  .dow{
+    background:#f5f5f4;
+    text-align:center;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-soft);
+    padding:8px 0;border-bottom:1px solid var(--line);
+  }
+  .day{
+    min-height:96px;
+    border-right:1px solid var(--line-soft);
+    border-bottom:1px solid var(--line-soft);
+    padding:6px 7px;
+    position:relative;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .day:nth-child(7n){border-right:none}
+  .day.dim{background:#fafaf9;color:#a8a29e}
+  .day.today{background:var(--accent-soft)}
+  .day .num{
+    font-size:12px;color:var(--ink-soft);font-feature-settings:"tnum";
+  }
+  .day.today .num{color:var(--accent);font-weight:600}
+  .chip{
+    background:var(--chip);color:var(--chip-ink);
+    border:1px solid #fdba74;
+    border-radius:3px;
+    padding:3px 5px;
+    font-size:11px;line-height:1.2;
+    cursor:pointer;
+    text-align:left;
+  }
+  .chip:hover{filter:brightness(.96)}
+  .chip .name{font-weight:600;display:block}
+  .chip .time{display:block;font-size:10px;color:#9a3412}
+  /* add form */
+  #add-form{
+    display:none;
+    background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);
+    padding:14px;margin-top:12px;border-radius:4px;
+  }
+  #add-form.show{display:block}
+  #add-form .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  #add-form label{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px}
+  #add-form input{
+    font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:3px;
+    background:#fff;
+  }
+  #add-form input[type="text"]{min-width:200px}
+  /* detail popover (uses <dialog> for simplicity) */
+  dialog{
+    border:1px solid var(--line);border-radius:4px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+    padding:16px 18px;max-width:360px;
+  }
+  dialog::backdrop{background:rgba(0,0,0,.25)}
+  dialog h3{margin:0 0 6px;font-weight:600;font-size:17px}
+  dialog .meta{color:var(--ink-soft);font-size:13px;margin-bottom:12px}
+  dialog .actions{display:flex;justify-content:space-between;gap:8px}
+  .empty-hint{
+    color:var(--ink-soft);font-style:italic;font-size:13px;text-align:center;
+    padding:14px 0;
+  }
+  /* print layout */
+  @media print{
+    @page{margin:.5in}
+    body{background:#fff}
+    .toolbar, .month-nav button, #add-form, .ver, header.page .sub{display:none}
+    .month-nav h2{text-align:left;font-size:22px}
+    .grid{border:1px solid #000;box-shadow:none}
+    .day{min-height:80px;page-break-inside:avoid}
+    .dow{background:#f3f3f3}
+    .chip{background:#fff;border:1px solid #555;color:#000;page-break-inside:avoid}
+    .chip .time{color:#333}
+    .day.today{background:#fff}
+    .print-list{
+      display:block;margin-top:18px;border-top:1px solid #000;padding-top:10px;
+      font-size:12px;
+    }
+    .print-list h3{margin:0 0 6px;font-size:14px}
+    .print-list li{margin-bottom:3px}
+  }
+  .print-list{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <h1>Villas at Legacy Farms — Clubhouse Reservations</h1>
+      <div class="sub">Owner rental calendar</div>
+    </div>
+    <span class="ver">H.01.00</span>
+  </header>
+
+  <div class="toolbar">
+    <button onclick="changeMonth(-1)">‹ Prev</button>
+    <button onclick="goToday()">Today</button>
+    <button onclick="changeMonth(1)">Next ›</button>
+    <span class="spacer"></span>
+    <button onclick="toggleAdd()">+ Add reservation</button>
+    <button onclick="window.print()">Print month</button>
+  </div>
+
+  <div class="month-nav">
+    <h2 id="month-label">—</h2>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div id="add-form">
+    <div class="row">
+      <div>
+        <label for="f-name">Renter name</label>
+        <input id="f-name" type="text" placeholder="e.g., Jane Doe">
+      </div>
+      <div>
+        <label for="f-date">Date</label>
+        <input id="f-date" type="date">
+      </div>
+      <div>
+        <label for="f-start">Start</label>
+        <input id="f-start" type="time">
+      </div>
+      <div>
+        <label for="f-end">End</label>
+        <input id="f-end" type="time">
+      </div>
+      <button class="primary" onclick="addReservation()">Save</button>
+      <button onclick="toggleAdd()">Cancel</button>
+    </div>
+  </div>
+
+  <ul class="print-list" id="print-list"></ul>
+
+  <dialog id="detail">
+    <h3 id="d-name"></h3>
+    <div class="meta" id="d-meta"></div>
+    <div class="actions">
+      <button onclick="removeCurrent()">Remove reservation</button>
+      <button onclick="document.getElementById('detail').close()">Close</button>
+    </div>
+  </dialog>
+
+</div>
+
+<script>
+  // ---------- Seed data (verified from Integrator emails as of 2026-05-13) ----------
+  const SEED = [
+    { id:'r-clawson-20260613',   name:'Stuart Clawson',         date:'2026-06-13', start:'10:00 AM', end:'04:00 PM' },
+    { id:'r-luke-20260510',      name:'Bradford K Luke',        date:'2026-05-10', start:'04:30 PM', end:'10:00 PM' },
+    { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM' }
+  ];
+
+  const STORE_KEY = 'villas-clubhouse-reservations-v1';
+  let reservations = load();
+  let curYear, curMonth;
+  let curDetailId = null;
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(SEED));
+        return [...SEED];
+      }
+      const parsed = JSON.parse(raw);
+      // Merge in any seeded reservations that aren't already there
+      const ids = new Set(parsed.map(r=>r.id));
+      let changed = false;
+      for(const s of SEED){
+        if(!ids.has(s.id)){ parsed.push(s); changed=true; }
+      }
+      if(changed) localStorage.setItem(STORE_KEY, JSON.stringify(parsed));
+      return parsed;
+    }catch(e){ return [...SEED]; }
+  }
+  function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(reservations)); }
+
+  function init(){
+    const t = new Date();
+    curYear = t.getFullYear();
+    curMonth = t.getMonth();
+    render();
+  }
+
+  function render(){
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('month-label').textContent = `${monthNames[curMonth]} ${curYear}`;
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{
+      const el = document.createElement('div'); el.className='dow'; el.textContent=d; grid.appendChild(el);
+    });
+
+    const first = new Date(curYear, curMonth, 1);
+    const startWeekday = first.getDay();
+    const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+    const prevDays = new Date(curYear, curMonth, 0).getDate();
+
+    const today = new Date();
+    const isCurMonth = today.getFullYear()===curYear && today.getMonth()===curMonth;
+
+    // Leading dim days
+    for(let i=startWeekday-1; i>=0; i--){
+      const d = document.createElement('div');
+      d.className='day dim';
+      d.innerHTML = `<div class="num">${prevDays - i}</div>`;
+      grid.appendChild(d);
+    }
+    // Current month
+    for(let day=1; day<=daysInMonth; day++){
+      const d = document.createElement('div');
+      d.className = 'day';
+      if(isCurMonth && day===today.getDate()) d.classList.add('today');
+      const dateStr = `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      d.innerHTML = `<div class="num">${day}</div>`;
+      // Reservations on this day
+      const dayRes = reservations.filter(r=>r.date===dateStr);
+      dayRes.sort((a,b)=>a.start.localeCompare(b.start));
+      for(const r of dayRes){
+        const chip = document.createElement('div');
+        chip.className='chip';
+        chip.innerHTML = `<span class="name">${escape(r.name)}</span><span class="time">${r.start} – ${r.end}</span>`;
+        chip.onclick = ()=>openDetail(r.id);
+        d.appendChild(chip);
+      }
+      grid.appendChild(d);
+    }
+    // Trailing dim days to complete grid
+    const totalCells = startWeekday + daysInMonth;
+    const trail = (7 - (totalCells % 7)) % 7;
+    for(let i=1; i<=trail; i++){
+      const d = document.createElement('div');
+      d.className='day dim';
+      d.innerHTML = `<div class="num">${i}</div>`;
+      grid.appendChild(d);
+    }
+
+    // Build print list for current month
+    buildPrintList();
+  }
+
+  function buildPrintList(){
+    const ul = document.getElementById('print-list');
+    const items = reservations
+      .filter(r=>{
+        const [y,m] = r.date.split('-').map(Number);
+        return y===curYear && (m-1)===curMonth;
+      })
+      .sort((a,b)=> a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+    if(!items.length){
+      ul.innerHTML = '<h3>Reservations this month</h3><li><em>None</em></li>';
+      return;
+    }
+    ul.innerHTML = '<h3>Reservations this month</h3>' +
+      items.map(r=>{
+        const [y,m,d] = r.date.split('-').map(Number);
+        const dt = new Date(y, m-1, d);
+        const ds = dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+        return `<li><strong>${ds}</strong> — ${escape(r.name)}, ${r.start} to ${r.end}</li>`;
+      }).join('');
+  }
+
+  function openDetail(id){
+    const r = reservations.find(x=>x.id===id);
+    if(!r) return;
+    curDetailId = id;
+    document.getElementById('d-name').textContent = r.name;
+    const [y,m,d] = r.date.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    document.getElementById('d-meta').textContent =
+      `${dt.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})} · ${r.start} – ${r.end}`;
+    document.getElementById('detail').showModal();
+  }
+  function removeCurrent(){
+    if(!curDetailId) return;
+    if(!confirm('Remove this reservation?')) return;
+    reservations = reservations.filter(r=>r.id!==curDetailId);
+    save();
+    document.getElementById('detail').close();
+    render();
+  }
+
+  function toggleAdd(){
+    const f = document.getElementById('add-form');
+    f.classList.toggle('show');
+    if(f.classList.contains('show')){
+      document.getElementById('f-date').value =
+        `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+      document.getElementById('f-name').focus();
+    }
+  }
+
+  function fmt12(t){
+    // "HH:MM" 24h → "HH:MM AM/PM"
+    if(!t) return '';
+    const [hh,mm] = t.split(':').map(Number);
+    const ampm = hh>=12 ? 'PM':'AM';
+    const h12 = ((hh+11)%12)+1;
+    return `${String(h12).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ampm}`;
+  }
+
+  function addReservation(){
+    const name = document.getElementById('f-name').value.trim();
+    const date = document.getElementById('f-date').value;
+    const start = document.getElementById('f-start').value;
+    const end = document.getElementById('f-end').value;
+    if(!name || !date || !start || !end){ alert('Please fill in all fields.'); return; }
+    const r = { id:'r'+Date.now(), name, date, start:fmt12(start), end:fmt12(end) };
+    reservations.push(r);
+    save();
+    // Jump to that month
+    const [y,m] = date.split('-').map(Number);
+    curYear = y; curMonth = m-1;
+    document.getElementById('f-name').value='';
+    document.getElementById('f-start').value='';
+    document.getElementById('f-end').value='';
+    document.getElementById('add-form').classList.remove('show');
+    render();
+  }
+
+  function changeMonth(dir){
+    curMonth += dir;
+    if(curMonth>11){curMonth=0;curYear++;}
+    if(curMonth<0){curMonth=11;curYear--;}
+    render();
+  }
+  function goToday(){
+    const t = new Date();
+    curYear = t.getFullYear();
+    curMonth = t.getMonth();
+    render();
+  }
+
+  function escape(s){
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  init();
+</script>
+</body>
+</html>
