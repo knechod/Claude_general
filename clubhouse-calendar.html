@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <!--
   HOA Clubhouse Reservation Calendar
-  Version: H.01.00
+  Version: H.01.01
   Project: H (HOA Clubhouse Calendar)
   Generated: 2026-05-13
+  H.01.01: Added per-reservation committee-member assignment (editable
+           via the detail dialog; shown on chips and in print view).
 -->
 <html lang="en">
 <head>
@@ -114,6 +116,13 @@
   .chip:hover{filter:brightness(.96)}
   .chip .name{font-weight:600;display:block}
   .chip .time{display:block;font-size:10px;color:#9a3412}
+  .chip .who{
+    display:block;font-size:10px;color:#9a3412;
+    font-style:italic;margin-top:1px;
+  }
+  .chip.unassigned{
+    background:#fff7ed;border-style:dashed;
+  }
   /* add form */
   #add-form{
     display:none;
@@ -132,12 +141,32 @@
   dialog{
     border:1px solid var(--line);border-radius:4px;
     box-shadow:0 8px 24px rgba(0,0,0,.12);
-    padding:16px 18px;max-width:360px;
+    padding:16px 18px;max-width:380px;
   }
   dialog::backdrop{background:rgba(0,0,0,.25)}
   dialog h3{margin:0 0 6px;font-weight:600;font-size:17px}
-  dialog .meta{color:var(--ink-soft);font-size:13px;margin-bottom:12px}
+  dialog .meta{color:var(--ink-soft);font-size:13px;margin-bottom:14px}
+  dialog .field{margin-bottom:14px}
+  dialog .field label{
+    display:block;font-size:11px;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;
+  }
+  dialog .field-row{display:flex;gap:6px;align-items:center}
+  dialog .field input{
+    flex:1;font:inherit;padding:7px 9px;
+    border:1px solid var(--line);border-radius:3px;background:#fff;
+  }
+  dialog .field input:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent-soft);
+  }
   dialog .actions{display:flex;justify-content:space-between;gap:8px}
+  dialog .saved-flash{
+    color:var(--accent);font-size:12px;
+    opacity:0;transition:opacity .2s;
+    margin-left:6px;
+  }
+  dialog .saved-flash.show{opacity:1}
   .empty-hint{
     color:var(--ink-soft);font-style:italic;font-size:13px;text-align:center;
     padding:14px 0;
@@ -152,7 +181,9 @@
     .day{min-height:80px;page-break-inside:avoid}
     .dow{background:#f3f3f3}
     .chip{background:#fff;border:1px solid #555;color:#000;page-break-inside:avoid}
+    .chip.unassigned{background:#fff;border-style:dashed}
     .chip .time{color:#333}
+    .chip .who{color:#000;font-style:italic}
     .day.today{background:#fff}
     .print-list{
       display:block;margin-top:18px;border-top:1px solid #000;padding-top:10px;
@@ -172,7 +203,7 @@
       <h1>Villas at Legacy Farms — Clubhouse Reservations</h1>
       <div class="sub">Owner rental calendar</div>
     </div>
-    <span class="ver">H.01.00</span>
+    <span class="ver">H.01.01</span>
   </header>
 
   <div class="toolbar">
@@ -218,6 +249,19 @@
   <dialog id="detail">
     <h3 id="d-name"></h3>
     <div class="meta" id="d-meta"></div>
+    <div class="field">
+      <label for="d-assigned">Committee member checking out renter</label>
+      <div class="field-row">
+        <input id="d-assigned" type="text" list="committee-list" placeholder="— unassigned —" autocomplete="off">
+        <button class="primary" onclick="saveAssignment()">Save</button>
+        <span class="saved-flash" id="saved-flash">✓ Saved</span>
+      </div>
+    </div>
+    <datalist id="committee-list">
+      <option value="Kevin Nechodom"></option>
+      <option value="Pat Nechodom"></option>
+      <option value="Ray Mills"></option>
+    </datalist>
     <div class="actions">
       <button onclick="removeCurrent()">Remove reservation</button>
       <button onclick="document.getElementById('detail').close()">Close</button>
@@ -229,9 +273,9 @@
 <script>
   // ---------- Seed data (verified from Integrator emails as of 2026-05-13) ----------
   const SEED = [
-    { id:'r-clawson-20260613',   name:'Stuart Clawson',         date:'2026-06-13', start:'10:00 AM', end:'04:00 PM' },
-    { id:'r-luke-20260510',      name:'Bradford K Luke',        date:'2026-05-10', start:'04:30 PM', end:'10:00 PM' },
-    { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM' }
+    { id:'r-clawson-20260613',   name:'Stuart Clawson',         date:'2026-06-13', start:'10:00 AM', end:'04:00 PM', assignedTo:'' },
+    { id:'r-luke-20260510',      name:'Bradford K Luke',        date:'2026-05-10', start:'04:30 PM', end:'10:00 PM', assignedTo:'' },
+    { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM', assignedTo:'' }
   ];
 
   const STORE_KEY = 'villas-clubhouse-reservations-v1';
@@ -303,8 +347,12 @@
       dayRes.sort((a,b)=>a.start.localeCompare(b.start));
       for(const r of dayRes){
         const chip = document.createElement('div');
-        chip.className='chip';
-        chip.innerHTML = `<span class="name">${escape(r.name)}</span><span class="time">${r.start} – ${r.end}</span>`;
+        const assigned = (r.assignedTo || '').trim();
+        chip.className = 'chip' + (assigned ? '' : ' unassigned');
+        const whoLine = assigned
+          ? `<span class="who">— ${escape(firstName(assigned))}</span>`
+          : `<span class="who">— unassigned</span>`;
+        chip.innerHTML = `<span class="name">${escape(r.name)}</span><span class="time">${r.start} – ${r.end}</span>${whoLine}`;
         chip.onclick = ()=>openDetail(r.id);
         d.appendChild(chip);
       }
@@ -341,7 +389,9 @@
         const [y,m,d] = r.date.split('-').map(Number);
         const dt = new Date(y, m-1, d);
         const ds = dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-        return `<li><strong>${ds}</strong> — ${escape(r.name)}, ${r.start} to ${r.end}</li>`;
+        const assigned = (r.assignedTo || '').trim();
+        const whoBit = assigned ? ` · checkout: ${escape(assigned)}` : ' · <em>checkout unassigned</em>';
+        return `<li><strong>${ds}</strong> — ${escape(r.name)}, ${r.start} to ${r.end}${whoBit}</li>`;
       }).join('');
   }
 
@@ -354,7 +404,22 @@
     const dt = new Date(y, m-1, d);
     document.getElementById('d-meta').textContent =
       `${dt.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})} · ${r.start} – ${r.end}`;
+    document.getElementById('d-assigned').value = r.assignedTo || '';
+    document.getElementById('saved-flash').classList.remove('show');
     document.getElementById('detail').showModal();
+  }
+  function saveAssignment(){
+    if(!curDetailId) return;
+    const val = document.getElementById('d-assigned').value.trim();
+    const r = reservations.find(x=>x.id===curDetailId);
+    if(!r) return;
+    r.assignedTo = val;
+    save();
+    render();
+    // Flash a "saved" confirmation
+    const flash = document.getElementById('saved-flash');
+    flash.classList.add('show');
+    setTimeout(()=>flash.classList.remove('show'), 1500);
   }
   function removeCurrent(){
     if(!curDetailId) return;
@@ -363,6 +428,11 @@
     save();
     document.getElementById('detail').close();
     render();
+  }
+
+  function firstName(fullName){
+    const parts = String(fullName).trim().split(/\s+/);
+    return parts[0] || fullName;
   }
 
   function toggleAdd(){
@@ -390,7 +460,7 @@
     const start = document.getElementById('f-start').value;
     const end = document.getElementById('f-end').value;
     if(!name || !date || !start || !end){ alert('Please fill in all fields.'); return; }
-    const r = { id:'r'+Date.now(), name, date, start:fmt12(start), end:fmt12(end) };
+    const r = { id:'r'+Date.now(), name, date, start:fmt12(start), end:fmt12(end), assignedTo:'' };
     reservations.push(r);
     save();
     // Jump to that month
