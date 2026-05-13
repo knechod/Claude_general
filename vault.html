@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<!--
+  HOA Project Vault — encrypted credential storage
+  Version: H.02.00
+  Project: H (HOA tools)
+  Generated: 2026-05-13
+
+  This file uses the Web Crypto API to encrypt a credential (e.g., GitHub PAT)
+  in the browser using a passphrase-derived key. The encrypted blob can then
+  be committed back to this file, replacing the ENCRYPTED_PAT placeholder.
+
+  Crypto:
+    - Key derivation: PBKDF2-SHA256, 600,000 iterations, 16-byte random salt
+    - Cipher: AES-GCM, 256-bit key, 12-byte random IV
+    - Output: base64-encoded JSON blob
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault — Encrypted Credential Storage</title>
+<style>
+  :root{
+    --ink:#1f2937;
+    --ink-soft:#4b5563;
+    --line:#d6d3d1;
+    --line-soft:#e7e5e4;
+    --paper:#fafaf9;
+    --card:#ffffff;
+    --accent:#1e3a5f;
+    --accent-soft:#dbeafe;
+    --warn-bg:#fef3c7;
+    --warn-ink:#78350f;
+    --ok:#065f46;
+    --err:#991b1b;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 22px 60px}
+  header.page{
+    border-bottom:1px solid var(--line);
+    padding-bottom:14px;margin-bottom:22px;
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  header.page h1{
+    font-size:24px;letter-spacing:.01em;margin:0;font-weight:600;
+  }
+  header.page .sub{
+    color:var(--ink-soft);font-size:13px;font-style:italic;
+  }
+  .ver{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:11px;color:var(--ink-soft);
+    border:1px solid var(--line);padding:2px 6px;border-radius:3px;
+    background:#fff;
+  }
+  .mode-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+    border-radius:6px;
+    padding:22px;
+    margin-bottom:18px;
+  }
+  .mode-card h2{
+    margin:0 0 4px;font-size:18px;font-weight:600;
+  }
+  .mode-card .lede{
+    color:var(--ink-soft);font-size:14px;margin:0 0 18px;
+  }
+  label{
+    display:block;font-size:11px;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.1em;
+    margin-bottom:5px;margin-top:14px;
+  }
+  input[type="password"], input[type="text"], textarea{
+    font:inherit;
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:#fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:13px;
+  }
+  textarea{
+    min-height:120px;resize:vertical;
+    word-break:break-all;
+  }
+  input:focus, textarea:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .actions{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;
+  }
+  button{
+    font:inherit;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:9px 16px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  button:hover{background:#f5f5f4;border-color:#a8a29e}
+  button.primary{
+    background:var(--accent);color:#fff;border-color:var(--accent);
+  }
+  button.primary:hover{background:#152a45}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .note{
+    background:var(--warn-bg);color:var(--warn-ink);
+    border-radius:4px;padding:10px 14px;font-size:13px;
+    margin-top:14px;
+  }
+  .note strong{font-weight:600}
+  .status{
+    margin-top:12px;font-size:13px;
+  }
+  .status.ok{color:var(--ok)}
+  .status.err{color:var(--err)}
+  .reveal{
+    background:var(--accent-soft);
+    border:1px solid #93c5fd;
+    border-radius:4px;
+    padding:12px 14px;
+    margin-top:14px;
+    display:none;
+  }
+  .reveal.show{display:block}
+  .reveal .label-mini{
+    font-size:11px;color:var(--accent);
+    text-transform:uppercase;letter-spacing:.1em;
+    margin-bottom:6px;
+  }
+  .reveal .pat{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:13px;word-break:break-all;
+    background:#fff;border:1px solid #bfdbfe;
+    padding:8px 10px;border-radius:3px;
+  }
+  .reveal .countdown{
+    font-size:12px;color:var(--ink-soft);
+    margin-top:8px;
+  }
+  .instructions{
+    background:#f5f5f4;border-radius:4px;
+    padding:14px 16px;margin-top:14px;font-size:13.5px;
+  }
+  .instructions ol{margin:8px 0 0;padding-left:22px}
+  .instructions li{margin-bottom:6px}
+  .instructions code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background:#fff;padding:1px 5px;border-radius:3px;border:1px solid var(--line);
+    font-size:12px;
+  }
+  details{margin-top:14px;font-size:13px}
+  details summary{cursor:pointer;color:var(--ink-soft);user-select:none}
+  details summary:hover{color:var(--ink)}
+  .footer-info{
+    margin-top:24px;color:var(--ink-soft);font-size:12px;font-style:italic;text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <h1>Project Vault</h1>
+      <div class="sub">Encrypted credential storage · client-side only</div>
+    </div>
+    <span class="ver">H.02.00</span>
+  </header>
+
+  <!-- ============= OPERATIONAL MODE ============= -->
+  <section class="mode-card" id="op-mode" hidden>
+    <h2>Decrypt credential</h2>
+    <p class="lede">Enter your passphrase to reveal the stored credential. Decryption happens entirely in this browser; the passphrase is never transmitted.</p>
+
+    <label for="op-pass">Passphrase</label>
+    <input type="password" id="op-pass" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+    <div class="actions">
+      <button class="primary" onclick="doDecrypt()">Decrypt</button>
+      <button onclick="document.getElementById('op-pass').value=''">Clear</button>
+      <button onclick="switchToSetup()" style="margin-left:auto">Rotate credential…</button>
+    </div>
+
+    <div class="status" id="op-status"></div>
+
+    <div class="reveal" id="reveal">
+      <div class="label-mini">Decrypted credential</div>
+      <div class="pat" id="reveal-pat"></div>
+      <div class="actions" style="margin-top:10px">
+        <button onclick="copyPat()">Copy</button>
+        <button onclick="hidePat()">Hide</button>
+      </div>
+      <div class="countdown" id="countdown"></div>
+    </div>
+  </section>
+
+  <!-- ============= SETUP MODE ============= -->
+  <section class="mode-card" id="setup-mode">
+    <h2>Set up encrypted credential</h2>
+    <p class="lede">Paste the credential and choose a passphrase. Encryption runs entirely in this browser — neither value leaves your device.</p>
+
+    <label for="setup-pat">Credential (GitHub PAT)</label>
+    <input type="password" id="setup-pat" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…">
+
+    <label for="setup-pass">Passphrase</label>
+    <input type="password" id="setup-pass" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Choose a strong passphrase">
+
+    <label for="setup-pass2">Passphrase (confirm)</label>
+    <input type="password" id="setup-pass2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+    <div class="note">
+      <strong>Passphrase strength matters.</strong> The encrypted blob will live in a public GitHub repo, so anyone can attempt offline brute force. Use a long passphrase — four or more random words is good, dictionary single words are not.
+    </div>
+
+    <div class="actions">
+      <button class="primary" onclick="doEncrypt()">Encrypt</button>
+      <button onclick="clearSetup()">Clear</button>
+    </div>
+
+    <div class="status" id="setup-status"></div>
+
+    <div id="setup-output-wrap" hidden>
+      <label for="setup-output">Encrypted blob — copy this and paste it into the source file</label>
+      <textarea id="setup-output" readonly onclick="this.select()"></textarea>
+      <div class="actions">
+        <button onclick="copyBlob()">Copy blob</button>
+      </div>
+
+      <div class="instructions">
+        <strong>Next steps to make this operational:</strong>
+        <ol>
+          <li>Tap <strong>Copy blob</strong> above (or long-press the textarea → Select All → Copy).</li>
+          <li>In Safari, open <code>github.com/knechod/Claude_general/edit/main/vault.html</code></li>
+          <li>Find the line <code>const ENCRYPTED_PAT = '';</code> near the bottom of the file.</li>
+          <li>Replace the empty <code>''</code> with the copied blob, wrapped in single quotes: <code>const ENCRYPTED_PAT = '&lt;paste here&gt;';</code></li>
+          <li>Commit the change.</li>
+          <li>Wait ~1 minute for GitHub Pages to rebuild, then reload this page — it will switch into decrypt mode automatically.</li>
+        </ol>
+      </div>
+    </div>
+
+    <details>
+      <summary>What's actually happening cryptographically?</summary>
+      <p>Your passphrase is fed into <strong>PBKDF2-SHA256</strong> with a random 16-byte salt and 600,000 iterations to derive a 256-bit AES key. The credential is then encrypted with <strong>AES-GCM</strong> using a random 12-byte IV. The output blob contains the salt, IV, and ciphertext (all base64), plus the KDF parameters so this file can decrypt itself later. Nothing is transmitted; all crypto runs in your browser via the Web Crypto API.</p>
+    </details>
+  </section>
+
+  <div class="footer-info">
+    This page is part of the <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">Claude_general</code> repo.
+    All crypto runs in your browser — no network traffic.
+  </div>
+
+</div>
+
+<script>
+  // ============ EMBEDDED CIPHERTEXT ============
+  // Replace the empty string below with the encrypted blob output by setup mode.
+  // The page will automatically switch to decrypt mode when this is filled in.
+  const ENCRYPTED_PAT = '';
+  // =============================================
+
+  // ---- base64 helpers ----
+  function bytesToB64(bytes){
+    let s = '';
+    bytes.forEach(b => s += String.fromCharCode(b));
+    return btoa(s);
+  }
+  function b64ToBytes(s){
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  // ---- key derivation ----
+  async function deriveKey(passphrase, salt, iterations){
+    const km = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt, iterations, hash:'SHA-256' },
+      km,
+      { name:'AES-GCM', length:256 },
+      false,
+      ['encrypt','decrypt']
+    );
+  }
+
+  // ---- encrypt ----
+  async function doEncrypt(){
+    const status = document.getElementById('setup-status');
+    status.className = 'status';
+    status.textContent = '';
+
+    const pat = document.getElementById('setup-pat').value;
+    const pass = document.getElementById('setup-pass').value;
+    const pass2 = document.getElementById('setup-pass2').value;
+
+    if(!pat){ status.className='status err'; status.textContent='Credential is empty.'; return; }
+    if(!pass){ status.className='status err'; status.textContent='Passphrase is empty.'; return; }
+    if(pass !== pass2){ status.className='status err'; status.textContent='Passphrases do not match.'; return; }
+    if(pass.length < 12){ status.className='status err'; status.textContent='Passphrase too short — minimum 12 characters. Aim higher.'; return; }
+
+    status.textContent = 'Deriving key… (this takes a couple of seconds on iPad)';
+
+    try{
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const iterations = 600000;
+      const key = await deriveKey(pass, salt, iterations);
+      const ct = await crypto.subtle.encrypt(
+        { name:'AES-GCM', iv },
+        key,
+        new TextEncoder().encode(pat)
+      );
+
+      const blob = {
+        v: 1,
+        kdf: 'PBKDF2-SHA256',
+        iter: iterations,
+        salt: bytesToB64(salt),
+        iv: bytesToB64(iv),
+        ct: bytesToB64(new Uint8Array(ct))
+      };
+
+      document.getElementById('setup-output').value = JSON.stringify(blob);
+      document.getElementById('setup-output-wrap').hidden = false;
+      status.className = 'status ok';
+      status.textContent = '✓ Encrypted. Follow the next steps below.';
+    }catch(e){
+      status.className = 'status err';
+      status.textContent = 'Encryption failed: ' + e.message;
+    }
+  }
+
+  // ---- decrypt ----
+  async function doDecrypt(){
+    const status = document.getElementById('op-status');
+    status.className = 'status';
+    status.textContent = '';
+    hidePat();
+
+    const pass = document.getElementById('op-pass').value;
+    if(!pass){ status.className='status err'; status.textContent='Passphrase is empty.'; return; }
+    if(!ENCRYPTED_PAT){ status.className='status err'; status.textContent='No encrypted blob is embedded yet.'; return; }
+
+    status.textContent = 'Deriving key…';
+
+    try{
+      const blob = JSON.parse(ENCRYPTED_PAT);
+      const salt = b64ToBytes(blob.salt);
+      const iv = b64ToBytes(blob.iv);
+      const ct = b64ToBytes(blob.ct);
+      const key = await deriveKey(pass, salt, blob.iter);
+      const pt = await crypto.subtle.decrypt(
+        { name:'AES-GCM', iv },
+        key,
+        ct
+      );
+      const credential = new TextDecoder().decode(pt);
+      showPat(credential);
+      status.className = 'status ok';
+      status.textContent = '✓ Decrypted.';
+    }catch(e){
+      status.className = 'status err';
+      status.textContent = 'Decryption failed — wrong passphrase, or the blob is corrupted.';
+    }
+  }
+
+  // ---- reveal/hide PAT with auto-hide ----
+  let hideTimer = null;
+  let revealedPat = '';
+  function showPat(pat){
+    revealedPat = pat;
+    document.getElementById('reveal-pat').textContent = pat;
+    document.getElementById('reveal').classList.add('show');
+    startCountdown(60);
+  }
+  function hidePat(){
+    revealedPat = '';
+    document.getElementById('reveal-pat').textContent = '';
+    document.getElementById('reveal').classList.remove('show');
+    document.getElementById('countdown').textContent = '';
+    if(hideTimer){ clearInterval(hideTimer); hideTimer = null; }
+  }
+  function startCountdown(seconds){
+    if(hideTimer) clearInterval(hideTimer);
+    let remaining = seconds;
+    const el = document.getElementById('countdown');
+    el.textContent = `Auto-hides in ${remaining}s`;
+    hideTimer = setInterval(()=>{
+      remaining--;
+      if(remaining <= 0){ hidePat(); }
+      else el.textContent = `Auto-hides in ${remaining}s`;
+    }, 1000);
+  }
+  async function copyPat(){
+    if(!revealedPat) return;
+    try{
+      await navigator.clipboard.writeText(revealedPat);
+      document.getElementById('op-status').textContent = '✓ Copied to clipboard.';
+    }catch(e){
+      // Fallback: select the visible text
+      const r = document.createRange();
+      r.selectNode(document.getElementById('reveal-pat'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(r);
+      document.getElementById('op-status').textContent = 'Selected — long-press → Copy.';
+    }
+  }
+
+  async function copyBlob(){
+    const t = document.getElementById('setup-output');
+    t.select();
+    try{
+      await navigator.clipboard.writeText(t.value);
+      document.getElementById('setup-status').className = 'status ok';
+      document.getElementById('setup-status').textContent = '✓ Blob copied to clipboard.';
+    }catch(e){
+      document.getElementById('setup-status').textContent = 'Selected — long-press → Copy.';
+    }
+  }
+
+  function clearSetup(){
+    document.getElementById('setup-pat').value = '';
+    document.getElementById('setup-pass').value = '';
+    document.getElementById('setup-pass2').value = '';
+    document.getElementById('setup-output').value = '';
+    document.getElementById('setup-output-wrap').hidden = true;
+    document.getElementById('setup-status').textContent = '';
+  }
+
+  function switchToSetup(){
+    document.getElementById('op-mode').hidden = true;
+    document.getElementById('setup-mode').hidden = false;
+    hidePat();
+  }
+
+  // ---- mode selection on load ----
+  (function init(){
+    if(ENCRYPTED_PAT && ENCRYPTED_PAT.length > 0){
+      document.getElementById('setup-mode').hidden = true;
+      document.getElementById('op-mode').hidden = false;
+    }
+  })();
+</script>
+</body>
+</html>
