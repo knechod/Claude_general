@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!--
   HOA Clubhouse Reservation Calendar
-  Version: H.01.01
+  Version: H.01.02
   Project: H (HOA Clubhouse Calendar)
   Generated: 2026-05-13
   H.01.01: Added per-reservation committee-member assignment (editable
            via the detail dialog; shown on chips and in print view).
+  H.01.02: Added July reservations (Bogenschutz 7/18, Johnston 7/25),
+           verified against Gmail on 2026-07-18.
 -->
 <html lang="en">
 <head>
@@ -203,7 +205,7 @@
       <h1>Villas at Legacy Farms — Clubhouse Reservations</h1>
       <div class="sub">Owner rental calendar</div>
     </div>
-    <span class="ver">H.01.01</span>
+    <span class="ver">H.01.02</span>
   </header>
 
   <div class="toolbar">
@@ -277,7 +279,9 @@
   const SEED = [
     { id:'r-clawson-20260613',   name:'Stuart Clawson',         date:'2026-06-13', start:'10:00 AM', end:'04:00 PM', assignedTo:'' },
     { id:'r-luke-20260510',      name:'Bradford K Luke',        date:'2026-05-10', start:'04:30 PM', end:'10:00 PM', assignedTo:'' },
-    { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM', assignedTo:'' }
+    { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM', assignedTo:'' },
+    { id:'r-bogenschutz-20260718',name:'Karen Bogenschutz',     date:'2026-07-18', start:'04:30 PM', end:'10:00 PM', assignedTo:'' },
+    { id:'r-johnston-20260725', name:'Zande Johnston',          date:'2026-07-25', start:'12:00 PM', end:'05:00 PM', assignedTo:'' }
   ];
 
   const STORE_KEY = 'villas-clubhouse-reservations-v1';
