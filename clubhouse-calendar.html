@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <!--
   HOA Clubhouse Reservation Calendar
-  Version: H.01.02
+  Version: H.01.03
   Project: H (HOA Clubhouse Calendar)
   Generated: 2026-05-13
   H.01.01: Added per-reservation committee-member assignment (editable
            via the detail dialog; shown on chips and in print view).
   H.01.02: Added July reservations (Bogenschutz 7/18, Johnston 7/25),
            verified against Gmail on 2026-07-18.
+  H.01.03: Added Aug-Dec reservations (Doyle 9/12, Steed 9/13,
+           Bogenschutz 10/3, Harrington 10/9, Yates 11/26,
+           Fitzgerald 11/28, Stott Trust 12/6), all dates and times
+           confirmed directly from Integrator email bodies pasted
+           by user on 2026-08-12.
 -->
 <html lang="en">
 <head>
@@ -205,7 +210,7 @@
       <h1>Villas at Legacy Farms — Clubhouse Reservations</h1>
       <div class="sub">Owner rental calendar</div>
     </div>
-    <span class="ver">H.01.02</span>
+    <span class="ver">H.01.03</span>
   </header>
 
   <div class="toolbar">
@@ -281,7 +286,14 @@
     { id:'r-luke-20260510',      name:'Bradford K Luke',        date:'2026-05-10', start:'04:30 PM', end:'10:00 PM', assignedTo:'' },
     { id:'r-harrington-20260604',name:'David Leon Harrington',  date:'2026-06-04', start:'03:00 PM', end:'08:00 PM', assignedTo:'' },
     { id:'r-bogenschutz-20260718',name:'Karen Bogenschutz',     date:'2026-07-18', start:'04:30 PM', end:'10:00 PM', assignedTo:'' },
-    { id:'r-johnston-20260725', name:'Zande Johnston',          date:'2026-07-25', start:'12:00 PM', end:'05:00 PM', assignedTo:'' }
+    { id:'r-johnston-20260725', name:'Zande Johnston',          date:'2026-07-25', start:'12:00 PM', end:'05:00 PM', assignedTo:'' },
+    { id:'r-doyle-20260912',    name:'Delsa C Doyle',           date:'2026-09-12', start:'12:00 PM', end:'05:00 PM', assignedTo:'' },
+    { id:'r-steed-20260913',    name:'David M Steed',           date:'2026-09-13', start:'03:00 PM', end:'07:00 PM', assignedTo:'' },
+    { id:'r-bogenschutz2-20261003',name:'Karen Bogenschutz',    date:'2026-10-03', start:'04:00 PM', end:'09:00 PM', assignedTo:'' },
+    { id:'r-harrington2-20261009',name:'David Leon Harrington', date:'2026-10-09', start:'03:00 PM', end:'09:00 PM', assignedTo:'' },
+    { id:'r-yates-20261126',    name:'Cindy Yates',             date:'2026-11-26', start:'12:00 PM', end:'06:00 PM', assignedTo:'' },
+    { id:'r-fitzgerald-20261128',name:'Cristi Fitzgerald',      date:'2026-11-28', start:'03:00 PM', end:'09:00 PM', assignedTo:'' },
+    { id:'r-stott-20261206',    name:'Vicki Deane Stott Trust', date:'2026-12-06', start:'04:00 PM', end:'08:00 PM', assignedTo:'' }
   ];
 
   const STORE_KEY = 'villas-clubhouse-reservations-v1';
